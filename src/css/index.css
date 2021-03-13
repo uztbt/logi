@@ -1,0 +1,21 @@
+/*
+  Selectors
+  p -- element name
+  #para1 -- id name
+  .cls1 -- class name
+  * -- universal
+*/
+
+html, body, .root, .app, .tree-container{
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
