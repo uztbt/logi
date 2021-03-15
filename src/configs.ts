@@ -1,6 +1,7 @@
 import { RawNode } from './RawNode';
 export type Node = d3.HierarchyNode<RawNode>
 export type Tree = d3.HierarchyPointNode<RawNode> & {'_children'?: Tree[]}
+export type Point = {x: number, y: number}
 
 export const treeData: RawNodeData =
   {

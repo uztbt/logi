@@ -1,7 +1,8 @@
 import * as d3 from 'd3'
 import "./css/index.css"
-import { duration, height, margin, Node, Tree, treeData, width } from './configs';
+import { duration, height, margin, Point, Tree, treeData, width } from './configs';
 import { RawNode } from './RawNode';
+import { click, collapsed, cubicLine } from './functions';
 
 let i = 0; // The last node's ID
 
@@ -24,12 +25,11 @@ update(treemap(rootHierarchyNode) as Tree);
 
 function update(source: Tree) {
   // Preserve the source x and y
-  const [sourceX, sourceY] = [source.x, source.y];
+  const oldSourcePoint: Point = {x: source.x, y: source.y}
   // Render the whole tree
   const tree = treemap(rootHierarchyNode) as Tree;
   tree.x = height / 2;
   tree.y = 0;
-  const sourceTree = tree.find(d => d.id===source.id)!;
   
   // The deeper the node is, the higher the y value is
   const nodes = tree.descendants();
@@ -45,8 +45,8 @@ function update(source: Tree) {
   // the collapsed nodes from showing.
   const enteringNodes = existingNodes.enter().append('g')
     .classed('node', true)
-    .attr('transform', _ => `translate(${sourceY},${sourceX})`)
-    .on('click', click);
+    .attr('transform', _ => `translate(${oldSourcePoint.y},${oldSourcePoint.x})`)
+    .on('click', click(update));
 
   // Add circles for the added nodes.
   // Note that they are created inside the `g` element!
@@ -73,24 +73,36 @@ function update(source: Tree) {
     .attr('cursor', 'pointer');
 
   // Deal with exiting nodes
-  const exitingNodes = existingNodes.exit()
+  existingNodes.exit()
     .transition()
     .duration(duration)
-    .attr("transform", `translate(${sourceTree.y}, ${sourceTree.x})`)
+    .attr("transform", `translate(${source.y}, ${source.x})`)
+    .remove();
+
+  // ********** links selection ***************
+  // Join the existing DOMs with the data
+  const links = tree.descendants().slice(1);
+  const existingLinks = svg.selectAll<SVGPathElement, Tree[]>('path.link')
+    .data(links, (d: any) => d.id);
+
+  // Position the entering links before updating
+  const enteringLinks = existingLinks.enter().insert('path', "g")
+    .classed('link', true)
+    .attr('d', _ => cubicLine(oldSourcePoint, oldSourcePoint));
+
+  // deal with both the existing and entering links
+  // Transition back to the parent element position
+  const updatingLinks = enteringLinks.merge(existingLinks);
+  updatingLinks
+    .transition()
+    .duration(duration)
+    .attr('d', d => cubicLine(d, d.parent!))
+
+  // Remove any existing links
+  existingLinks.exit()
+    .transition()
+    .duration(duration)
+    .attr('d', d => cubicLine(source, source))
     .remove();
 }
 
-function click(event: MouseEvent, tree: Tree) {
-  if (tree.children) {
-    tree._children = tree.children;
-    tree.children = undefined;
-  } else {
-    tree.children = tree._children;
-    tree._children = undefined;
-  }
-  update(tree);
-}
-
-function collapsed(t: Tree): boolean {
-  return t._children === undefined;
-}
